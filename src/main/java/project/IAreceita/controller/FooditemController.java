@@ -42,8 +42,8 @@ public class FooditemController {
     public ResponseEntity<?> updateFoodId(@PathVariable Long id, @RequestBody FooditemModel fooditemModel){
         FooditemModel foodSaveId = fooditemService.findFoodId(id);
         if (foodSaveId != null){
-            foodSaveId.setId(id);
-            return ResponseEntity.ok(fooditemService.updateFood(foodSaveId));
+            fooditemModel.setId(id);
+            return ResponseEntity.ok(fooditemService.updateFood(fooditemModel));
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Erro ao atualizar dados !");
     }
