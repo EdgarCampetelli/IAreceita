@@ -5,11 +5,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import project.IAreceita.DTO.FooditemDTO;
+import project.IAreceita.model.FooditemModel;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class GeminiService {
@@ -25,8 +28,14 @@ public class GeminiService {
     @Value("${gemini.url.base}")
     public String url;
 
-    public Mono<String> generateRecipe(){
-        String prompt= "Faca uma receita de bolo de cenoura:";
+    public Mono<String> generateRecipe(List<FooditemDTO> fooditemDTOS){
+        String alimentos = fooditemDTOS.stream()
+                .map(item ->
+                        String.format("%s (%s) - Quantidade: %d, Validade: %s",
+                                item.getNome(), item.getCategoria(), item.getQuantidade(), item.getValidade()))
+                .collect(Collectors.joining("\n"));
+
+        String prompt= "Baseado no meu banco de dados, faca um receita com os seguintes itens:" + alimentos;
         Map<String, Object> requestBody = Map.of(
                 "contents", List.of(
                         Map.of("parts", List.of(

@@ -28,9 +28,9 @@ public class FooditemService {
     }
 
     public FooditemDTO saveFood(FooditemDTO fooditemDTO){
-        FooditemModel fooditemModel = fooditemMapper.map(fooditemDTO)
-;       fooditemRepository.save(fooditemModel);
-        return fooditemMapper.map(fooditemModel);
+        FooditemModel fooditemModel = fooditemMapper.map(fooditemDTO);
+        FooditemModel savedModel = fooditemRepository.save(fooditemModel);
+        return fooditemMapper.map(savedModel);
     }
 
     public void deleteFood(Long id){
