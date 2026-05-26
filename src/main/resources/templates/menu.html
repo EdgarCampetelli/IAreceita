@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IA Receita - Gerenciamento de Estoque</title>
+    <style>
+        /* --- CSS BASE --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #f4f6f9; padding: 40px 20px; color: #333; }
+        .container { width: 100%; max-width: 1100px; background: white; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); overflow: hidden; margin: auto; }
+
+        .header { background: linear-gradient(135deg, #2c3e50, #3498db); color: white; padding: 24px 32px; display: flex; justify-content: space-between; align-items: center; }
+        .header-actions { display: flex; align-items: center; gap: 15px; }
+
+        .btn-create {
+            background-color: #2ecc71; color: white; border: none; padding: 10px 20px;
+            border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s;
+        }
+        .btn-create:hover { background-color: #27ae60; transform: scale(1.05); }
+
+        .btn-recipe {
+            background-color: #9b59b6; color: white; border: none; padding: 10px 20px;
+            border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .btn-recipe:hover { background-color: #8e44ad; transform: scale(1.05); }
+
+        .table-wrapper { padding: 24px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: #f8f9fa; color: #5a6a85; padding: 16px; border-bottom: 2px solid #eef1f6; font-size: 0.75rem; text-transform: uppercase; }
+        td { padding: 16px; border-bottom: 1px solid #eef1f6; color: #4a5568; }
+        .category-tag { background: #e1f5fe; color: #0288d1; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; }
+
+        .actions-cell { display: flex; gap: 8px; }
+        .btn-edit { background: #f39c12; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        .btn-delete { background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 1000; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-box { background: white; padding: 30px; border-radius: 8px; width: 100%; max-width: 500px; transform: translateY(-20px); transition: 0.3s; }
+        .modal-overlay.active .modal-box { transform: translateY(0); }
+
+        .modal-box.modal-large { max-width: 700px; }
+
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .recipe-text-area { background-color: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 6px; padding: 20px; min-height: 200px; max-height: 400px; overflow-y: auto; white-space: pre-line; line-height: 1.6; font-size: 1rem; color: #2d3748; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; }
+        .form-control { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+        .btn-save { background: #2ecc71; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-cancel { background: #95a5a6; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Estoque de Alimentos</h1>
+        <div class="header-actions">
+            <button class="btn-recipe" id="btnGerarReceita" onclick="chamarGeradorReceita()">
+                <span id="textBtnRecipe">✨ Gerar Receita com IA</span>
+                <span id="spinnerRecipe" class="spinner hidden"></span>
+            </button>
+            <button class="btn-create" onclick="abrirModal('createModal')">+ Novo Item</button>
+            <div th:text="${#lists.size(foods)} + ' itens registrados'">0 itens</div>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Categoria</th>
+                <th>Quantidade</th>
+                <th>Validade</th>
+                <th>Ações</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="food : ${foods}">
+                <td th:text="${food.id}">#1</td>
+                <td th:text="${food.nome}" style="font-weight: 500;">Nome</td>
+                <td><span class="category-tag" th:text="${food.categoria}">Categoria</span></td>
+                <td th:text="${food.quantidade}">0</td>
+                <td th:text="${#temporals.format(food.validade, 'dd/MM/yyyy HH:mm')}">Data</td>
+                <td class="actions-cell">
+                    <button class="btn-edit" th:data-id="${food.id}" th:data-nome="${food.nome}" th:data-categoria="${food.categoria}" th:data-quantidade="${food.quantidade}" th:data-validade="${food.validade}" onclick="preencherEdicao(this)">Editar</button>
+                    <button class="btn-delete" th:data-id="${food.id}" th:data-nome="${food.nome}" onclick="preencherExclusao(this)">Excluir</button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-overlay" id="createModal">
+    <div class="modal-box">
+        <div class="modal-header"><h2>Novo Alimento</h2></div>
+        <form th:action="@{/saveFood}" method="POST">
+            <div class="form-group"><label>Nome</label><input type="text" name="nome" class="form-control" required></div>
+            <div class="form-group"><label>Categoria</label><input type="text" name="categoria" class="form-control" required></div>
+            <div class="form-group"><label>Quantidade</label><input type="number" name="quantidade" class="form-control" required></div>
+            <div class="form-group"><label>Validade</label><input type="datetime-local" name="validade" class="form-control" required></div>
+            <div class="form-actions">
+                <button type="button" class="btn-cancel" onclick="fecharModal('createModal')">Cancelar</button>
+                <button type="submit" class="btn-save">Cadastrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal-overlay" id="editModal">
+    <div class="modal-box">
+        <div class="modal-header"><h2>Editar Item</h2></div>
+        <form th:action="@{/updateFood}" method="POST">
+            <input type="hidden" id="editId" name="id">
+            <div class="form-group"><label>Nome</label><input type="text" id="editNome" name="nome" class="form-control" required></div>
+            <div class="form-group"><label>Categoria</label><input type="text" id="editCategoria" name="categoria" class="form-control" required></div>
+            <div class="form-group"><label>Quantidade</label><input type="number" id="editQuantidade" name="quantidade" class="form-control" required></div>
+            <div class="form-group"><label>Validade</label><input type="datetime-local" id="editValidade" name="validade" class="form-control" required></div>
+            <div class="form-actions">
+                <button type="button" class="btn-cancel" onclick="fecharModal('editModal')">Cancelar</button>
+                <button type="submit" class="btn-save">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-box">
+        <div class="modal-header"><h2>Excluir Item</h2></div>
+        <p>Deseja excluir <strong id="delNome"></strong>?</p>
+        <form th:action="@{/delete}" method="POST">
+            <input type="hidden" id="delId" name="id">
+            <div class="form-actions">
+                <button type="button" class="btn-cancel" onclick="fecharModal('deleteModal')">Não</button>
+                <button type="submit" class="btn-delete" style="padding: 10px 20px;">Sim, Excluir</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal-overlay" id="recipeModal">
+    <div class="modal-box modal-large">
+        <div class="modal-header">
+            <h2>Sua Receita Inteligente</h2>
+        </div>
+        <div class="recipe-text-area" id="recipeBody">
+            Carregando sugestões...
+        </div>
+        <div class="form-actions">
+            <button type="button" class="btn-cancel" onclick="fecharModal('recipeModal')">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function abrirModal(id) { document.getElementById(id).classList.add('active'); }
+    function fecharModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    function preencherEdicao(btn) {
+        document.getElementById('editId').value = btn.getAttribute('data-id');
+        document.getElementById('editNome').value = btn.getAttribute('data-nome');
+        document.getElementById('editCategoria').value = btn.getAttribute('data-categoria');
+        document.getElementById('editQuantidade').value = btn.getAttribute('data-quantidade');
+        const data = btn.getAttribute('data-validade');
+        if(data) document.getElementById('editValidade').value = data.substring(0, 16);
+        abrirModal('editModal');
+    }
+
+    function preencherExclusao(btn) {
+        document.getElementById('delId').value = btn.getAttribute('data-id');
+        document.getElementById('delNome').innerText = btn.getAttribute('data-nome');
+        abrirModal('deleteModal');
+    }
+
+    // FUNÇÃO PARA CHAMAR O BACKEND VIA REST/AJAX E PEGAR A RECEITA
+    function chamarGeradorReceita() {
+        const btn = document.getElementById('btnGerarReceita');
+        const textBtn = document.getElementById('textBtnRecipe');
+        const spinner = document.getElementById('spinnerRecipe');
+        const recipeBody = document.getElementById('recipeBody');
+
+        // 1. Ativa o estado visual de "carregando"
+        btn.disabled = true;
+        textBtn.innerText = "Criando receita...";
+        spinner.classList.remove('hidden');
+
+        // 2. Faz o fetch na rota que você criou no seu Controller
+        fetch('/generete')
+            .then(response => {
+                if (!response.ok) throw new Error('Erro ao buscar dados da IA.');
+                return response.text(); // A resposta do Gemini chega como texto puro/String
+            })
+            .then(textData => {
+                // 3. Alimenta o modal com a receita e exibe na tela
+                recipeBody.textContent = textData;
+                abrirModal('recipeModal');
+            })
+            .catch(error => {
+                recipeBody.textContent = "Erro ao processar receita: " + error.message;
+                abrirModal('recipeModal');
+            })
+            .finally(() => {
+                // 4. Restaura o botão ao estado original
+                btn.disabled = false;
+                textBtn.innerText = "✨ Gerar Receita com IA";
+                spinner.classList.add('hidden');
+            });
+    }
+
+    window.onclick = function(e) { if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('active'); }
+</script>
+</body>
+</html>
