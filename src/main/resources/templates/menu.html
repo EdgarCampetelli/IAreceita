@@ -140,7 +140,7 @@
     <div class="modal-box">
         <div class="modal-header"><h2>Excluir Item</h2></div>
         <p>Deseja excluir <strong id="delNome"></strong>?</p>
-        <form th:action="@{/delete}" method="POST">
+        <form th:action="@{/deleteFood}" method="POST">
             <input type="hidden" id="delId" name="id">
             <div class="form-actions">
                 <button type="button" class="btn-cancel" onclick="fecharModal('deleteModal')">Não</button>
