@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IA Receita - Gerenciamento de Estoque</title>
     <style>
-        /* --- CSS BASE --- */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background-color: #f4f6f9; padding: 40px 20px; color: #333; }
         .container { width: 100%; max-width: 1100px; background: white; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); overflow: hidden; margin: auto; }
@@ -184,26 +183,22 @@
         abrirModal('deleteModal');
     }
 
-    // FUNÇÃO PARA CHAMAR O BACKEND VIA REST/AJAX E PEGAR A RECEITA
     function chamarGeradorReceita() {
         const btn = document.getElementById('btnGerarReceita');
         const textBtn = document.getElementById('textBtnRecipe');
         const spinner = document.getElementById('spinnerRecipe');
         const recipeBody = document.getElementById('recipeBody');
 
-        // 1. Ativa o estado visual de "carregando"
         btn.disabled = true;
         textBtn.innerText = "Criando receita...";
         spinner.classList.remove('hidden');
 
-        // 2. Faz o fetch na rota que você criou no seu Controller
         fetch('/generete')
             .then(response => {
                 if (!response.ok) throw new Error('Erro ao buscar dados da IA.');
                 return response.text(); // A resposta do Gemini chega como texto puro/String
             })
             .then(textData => {
-                // 3. Alimenta o modal com a receita e exibe na tela
                 recipeBody.textContent = textData;
                 abrirModal('recipeModal');
             })
@@ -212,7 +207,6 @@
                 abrirModal('recipeModal');
             })
             .finally(() => {
-                // 4. Restaura o botão ao estado original
                 btn.disabled = false;
                 textBtn.innerText = "✨ Gerar Receita com IA";
                 spinner.classList.add('hidden');
